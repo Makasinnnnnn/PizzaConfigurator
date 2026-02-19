@@ -1,0 +1,22 @@
+{
+  "name": "pizzaconfigurator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Makasinnnnnn/pizzaConfigurator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Makasinnnnnn/pizzaConfigurator/issues"
+  },
+  "homepage": "https://github.com/Makasinnnnnn/pizzaConfigurator#readme"
+}
