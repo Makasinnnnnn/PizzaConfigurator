@@ -3,9 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
- "scripts": {
-  "start": "ts-node src/index.ts",
-  "build": "tsc"
+  "scripts": {
+  "start": "npx ts-node --swc src/index.ts"
 },
   "repository": {
     "type": "git",
@@ -18,5 +17,14 @@
   "bugs": {
     "url": "https://github.com/Makasinnnnnn/pizzaConfigurator/issues"
   },
-  "homepage": "https://github.com/Makasinnnnnn/pizzaConfigurator#readme"
+  "homepage": "https://github.com/Makasinnnnnn/pizzaConfigurator#readme",
+  "dependencies": {
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.15.11",
+    "@swc/helpers": "^0.5.18",
+    "@types/uuid": "^10.0.0",
+    "regenerator-runtime": "^0.14.1"
+  }
 }
