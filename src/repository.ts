@@ -1,34 +1,22 @@
 import { IEntity } from './models';
 
-export class Repository<T extends IEntity> {
-    private items: T[] = []; // Наше "хранилище" — обычный массив
-
-    // Добавление
+export class Repository<T extends IEntity>{
+    private items: T[]=[]; 
     create(item: T): void {
         this.items.push(item);
     }
+    
+    getAll():T[]{return this.items;}
 
-    // Чтение всех
-    getAll(): T[] {
-        return this.items;
-    }
+    getById(id: string): T|undefined{
+        return this.items.find(item=>item.id===id);}
 
-    // Поиск одного по ID (понадобится для редактирования)
-    getById(id: string): T | undefined {
-        return this.items.find(item => item.id === id);
-    }
-
-    // Удаление: фильтруем массив, оставляя всё, кроме объекта с этим ID
-    delete(id: string): void {
-        this.items = this.items.filter(item => item.id !== id);
-    }
-
-    // Редактирование: Partial<T> означает, что мы можем прислать только ЧАСТЬ полей (например, только новую цену)
+    //оставляем все кроме элемента выбранного
+    delete(id: string): void{this.items=this.items.filter(item=>item.id!==id);}
     update(id: string, updates: Partial<T>): void {
         const index = this.items.findIndex(item => item.id === id);
-        if (index !== -1) {
-            // Магия: берем старый объект и "накладываем" на него обновления
-            this.items[index] = { ...this.items[index], ...updates };
+        if (index !== -1){
+            this.items[index] = { ...this.items[index], ...updates};//апдейтим старый элем новыми данными
         }
     }
 }
