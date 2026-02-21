@@ -3,10 +3,12 @@ if(process.platform==='win32'){
     execSync('chcp 65001');
 }
 
+
 import readlineSync from 'readline-sync';
 import{v4 as uuidv4} from 'uuid';
 import{IIngredient, IPizzaBase, IPizza} from './models';
 import{Repository} from './repository';
+
 
 const ingredientRepo=new Repository<IIngredient>();
 const baseRepo=new Repository<IPizzaBase>();
@@ -78,6 +80,7 @@ function mainMenu(){
         }
     }
 }
+
 
 function addIngredientMenu(){
     console.clear();
@@ -198,7 +201,7 @@ function createPizzaMenu(){
 
 function showPizzas(){
     console.clear();
-    console.log('=== Каталог пицц ===');
+    console.log('Каталог пицц');
     const pizzas=pizzaRepo.getAll();
     
     if(pizzas.length === 0){
