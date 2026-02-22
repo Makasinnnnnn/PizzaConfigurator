@@ -99,7 +99,7 @@ function mainMenu(){
     }
 }
 
-function addIngredientMenu() {
+function addIngredientMenu(){
     console.log('\nДобавить ингредиент');
     let name='';
     while (name.trim().length===0){
@@ -157,7 +157,7 @@ function addBaseMenu(){
     readlineSync.question('Нажмите Enter чтобы продолжить');
 }
 
-function createPizzaMenu(saveToRepo: boolean = true): IPizza | void {
+function createPizzaMenu(saveToRepo: boolean = true): IPizza | void{
     console.log('\nСоздать пиццу');
     let name='';
     while (name.trim().length===0){
@@ -187,7 +187,7 @@ function createPizzaMenu(saveToRepo: boolean = true): IPizza | void {
         const borders = borderRepo.getAll();
         if (borders.length===0){
             console.log("Бортиков пока нет в системе.");
-        } else {
+        } else{
             const borderIndex = readlineSync.keyInSelect(borders.map(b=>b.name), 'Выберите бортик:');
             if (borderIndex!==-1) selectedBorder = borders[borderIndex];
         }
@@ -205,8 +205,12 @@ function createPizzaMenu(saveToRepo: boolean = true): IPizza | void {
     const borderPrice = selectedBorder ? selectedBorder.price : 0;
     const ingredientsPrice = selectedIngredients.reduce((sum, ing)=>sum+ing.price, 0);
     const totalPrice = Math.round((selectedBase.price + ingredientsPrice + borderPrice) * sizeMultiplier);
-
-    const newPizza: IPizza = {
+    const borders = borderRepo.getAll().filter(b => 
+            b.allowedPizzaIds.length === 0 || 
+            (saveToRepo === false) 
+        );
+    
+    const newPizza: IPizza ={
         id: uuidv4(),
         name: name.trim(),
         base: selectedBase,
@@ -216,11 +220,11 @@ function createPizzaMenu(saveToRepo: boolean = true): IPizza | void {
         totalPrice
     };
 
-    if (saveToRepo) {
+    if (saveToRepo){
         pizzaRepo.create(newPizza);
         console.log(`Пицца "${name}" [${selectedSize}] создана! Цена: ${totalPrice}р`);
         return;
-    } else {
+    } else{
         console.log(`Пицца "${name}" [${selectedSize}] собрана (в памяти). Цена: ${totalPrice}р`);
         return newPizza;
     }
@@ -246,7 +250,7 @@ function create5050Menu(){
     }
     const pizzaA = pizzas[aIdx];
     const pizzaB = pizzas[bIdx];
-    const newPizza: IPizza = {
+    const newPizza: IPizza ={
         id: uuidv4(),
         name: `${pizzaA.name}/${pizzaB.name} 50/50`,
         base: pizzaA.base,
@@ -256,7 +260,7 @@ function create5050Menu(){
     if (readlineSync.keyInYN('Сохранить пиццу в каталог?')){
         pizzaRepo.create(newPizza);
         console.log(`Пицца "${newPizza.name}" сохранена в каталог.`);
-    } else {
+    } else{
         console.log(`Пицца "${newPizza.name}" создана в памяти. Цена: ${newPizza.totalPrice}р`);
     }
     readlineSync.question('Нажмите Enter чтобы продолжить');
@@ -265,12 +269,13 @@ function create5050Menu(){
 function orderMenu(){
     console.clear();
     console.log('=== Меню заказа ===');
-    const order: IOrder = { id: uuidv4(), name: 'Новый заказ', items: [], totalPrice: 0, comment: '', createdAt: new Date(), timeWhenNeeded: new Date() };
+    const order: IOrder ={ id: uuidv4(), name: 'Новый заказ', items: [], totalPrice: 0, comment: '', createdAt: new Date(), timeWhenNeeded: new Date() };
     while (true){
         console.log('\n1. Добавить готовую пиццу в заказ');
         console.log('2. Собрать пиццу вручную (в заказ)');
         console.log('3. Показать текущие позиции');
         console.log('4. Завершить и сохранить заказ');
+        console.log('5. Добавить пиццу 50/50 (в заказ)');
         console.log('0. Отменить');
         const ch = readlineSync.question('Выберите:');
         if (ch === '0') return;
@@ -290,28 +295,30 @@ if (ch === '1'){
 
             const chosen = pizzas[idx];
             
-            // --- НОВЫЙ БЛОК ВЫБОРА РАЗМЕРА ---
             const sizes: PizzaSize[] = ['small', 'medium', 'large'];
             const sizeIndex = readlineSync.keyInSelect(['Маленькая (x1)', 'Средняя (x1.5)', 'Большая (x2)'], `Выберите размер для "${chosen.name}":`);
             
-            if (sizeIndex === -1) continue; // Если отменили выбор размера
+            if (sizeIndex === -1) continue; 
 
             const selectedSize = sizes[sizeIndex];
             let sizeMultiplier = 1;
             if (selectedSize === 'medium') sizeMultiplier = 1.5;
             if (selectedSize === 'large') sizeMultiplier = 2;
-
-            // Клонируем объект, чтобы не менять оригинал в каталоге
-            const cloned: IPizza = JSON.parse(JSON.stringify(chosen));
             
-            // Пересчитываем цену на основе выбранного размера
-            // Важно: берем компоненты из клонированной пиццы
+            const cloned: IPizza = JSON.parse(JSON.stringify(chosen));
+
+            const isDouble = readlineSync.keyInYN('Удвоить ингредиенты в этой пицце?');
+            if (isDouble){
+                cloned.ingredients = [...cloned.ingredients, ...cloned.ingredients];
+                cloned.name += ' (Двойные ингредиенты)';
+            }
+            
             const borderPrice = cloned.border ? cloned.border.price : 0;
             const ingredientsPrice = cloned.ingredients.reduce((sum, ing) => sum + ing.price, 0);
-            
             cloned.size = selectedSize;
             cloned.totalPrice = Math.round((cloned.base.price + ingredientsPrice + borderPrice) * sizeMultiplier);
-            // --------------------------------
+            cloned.size = selectedSize;
+            cloned.totalPrice = Math.round((cloned.base.price + ingredientsPrice + borderPrice) * sizeMultiplier);
 
             order.items.push(cloned);
             console.log(`Добавлено в заказ: ${cloned.name} [${selectedSize}] (${cloned.totalPrice}р)`);
@@ -321,10 +328,49 @@ if (ch === '1'){
                 order.items.push(manual as IPizza);
                 console.log(`Пицца добавлена в заказ (только в памяти): ${(manual as IPizza).name}`);
             }
+        } else if (ch === '5'){
+            const pizzas = pizzaRepo.getAll();
+            if (pizzas.length < 2){
+                console.log('Ошибка: в каталоге должно быть минимум 2 пиццы для создания 50/50');
+                continue;
+            }
+            pizzas.forEach((p, i) => console.log(`${i + 1}. ${p.name} (${p.totalPrice}р)`));
+            const aIdx = parseInt(readlineSync.question('Выберите номер первой половины:')) - 1;
+            const bIdx = parseInt(readlineSync.question('Выберите номер второй половины:')) - 1;
+            
+            if (isNaN(aIdx) || isNaN(bIdx) || aIdx<0 || bIdx<0 || aIdx>=pizzas.length || bIdx>=pizzas.length){
+                console.log('Неверный выбор');
+                continue;
+            }
+            
+            const sizes: PizzaSize[] = ['small', 'medium', 'large'];
+            const sizeIndex = readlineSync.keyInSelect(['Маленькая (x1)', 'Средняя (x1.5)', 'Большая (x2)'], 'Выберите размер для 50/50:');
+            if (sizeIndex === -1) continue;
+            
+            const selectedSize = sizes[sizeIndex];
+            const sizeMult = selectedSize === 'medium' ? 1.5 : selectedSize === 'large' ? 2 : 1;
+
+            const pizzaA = pizzas[aIdx];
+            const pizzaB = pizzas[bIdx];
+            const combinedIngredients = [...pizzaA.ingredients, ...pizzaB.ingredients];
+            const basePrice = pizzaA.base.price; 
+            const ingPrice = combinedIngredients.reduce((sum, ing) => sum + ing.price, 0) / 2; 
+            
+            const newPizza: IPizza ={
+                id: uuidv4(),
+                name: `${pizzaA.name}/${pizzaB.name} 50/50`,
+                base: pizzaA.base,
+                ingredients: combinedIngredients,
+                size: selectedSize,
+                totalPrice: Math.round((basePrice + ingPrice) * sizeMult)
+            };
+            
+            order.items.push(newPizza);
+            console.log(`Добавлено в заказ: ${newPizza.name} [${selectedSize}] (${newPizza.totalPrice}р)`);
         } else if (ch === '3'){
             if (order.items.length === 0){
                 console.log('Позиции отсутствуют');
-            } else {
+            } else{
                 order.items.forEach((it, i)=>console.log(`${i + 1}. ${it.name} (${it.totalPrice}р)`));
             }
         } else if (ch === '4'){
@@ -332,39 +378,34 @@ if (ch === '1'){
                 console.log('Заказ пуст. Сначала добавьте пиццы!');
                 continue;
             }
-
             order.totalPrice = order.items.reduce((s, it) => s + it.totalPrice, 0);
-
-            // Добавляем возможность ввести комментарий
             order.comment = readlineSync.question('\nВведите комментарий к заказу (Enter - пропустить): ');
-
-            // Спрашиваем про отложенный заказ
             const isDelayed = readlineSync.keyInYN('Это отложенный заказ (ко времени)?');
-            if (isDelayed) {
+            if (isDelayed){
                 const today = new Date();
                 const hint = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 18:30`;
                 
                 let validDate = false;
-                while (!validDate) {
+                while (!validDate){
                     const timeStr = readlineSync.question(`Введите дату и время заказа (например, ${hint}): `);
                     const parsedDate = new Date(timeStr);
                     
-                    if (isNaN(parsedDate.getTime())) {
+                    if (isNaN(parsedDate.getTime())){
                         console.log('Ошибка: неверный формат даты/времени. Попробуйте еще раз.');
-                    } else if (parsedDate < new Date()) {
+                    } else if (parsedDate < new Date()){
                         console.log('Ошибка: нельзя сделать заказ в прошлое!');
-                    } else {
+                    } else{
                         order.timeWhenNeeded = parsedDate;
                         validDate = true;
                     }
                 }
-            } else {
-                order.timeWhenNeeded = new Date(); // Заказ "на сейчас"
+            } else{
+                order.timeWhenNeeded = new Date(); 
             }
 
             orderRepo.create(order);
             console.log(`\nЗаказ успешно сохранён. Итог: ${order.totalPrice}р`);
-            if (isDelayed) {
+            if (isDelayed){
                 console.log(`Заказ будет готов к: ${order.timeWhenNeeded.toLocaleString()}`);
             }
             
@@ -384,12 +425,10 @@ function showPizzas(){
     console.log('=== Каталог пицц ===');
     const allPizzas = pizzaRepo.getAll();
     
-    // 1. Спрашиваем ключевое слово
     const filterKeyword = readlineSync.question('Введите название ингредиента для поиска (или Enter для всех): ');
     
-    // 2. Фильтруем список
     let displayPizzas = allPizzas;
-    if (filterKeyword.trim() !== '') {
+    if (filterKeyword.trim() !== ''){
         displayPizzas = allPizzas.filter(pizza => 
             pizza.ingredients.some(ing => 
                 ing.name.toLowerCase().includes(filterKeyword.toLowerCase())
@@ -399,9 +438,8 @@ function showPizzas(){
 
     if(displayPizzas.length === 0){
         console.log('Пицц не найдено');
-    } else {
-        // Выводим отфильтрованный список (displayPizzas вместо pizzas)
-        displayPizzas.forEach(pizza => {
+    } else{
+        displayPizzas.forEach(pizza =>{
             console.log(`\n${pizza.name} [${pizza.size || 'стандарт'}]`);
             const borderInfo = pizza.border ? `+Бортик: ${pizza.border.name} (+${pizza.border.price}р)` : '';
             console.log(`Основа: ${pizza.base.name} (${pizza.base.price}р) ${borderInfo}`);
@@ -417,31 +455,36 @@ function showPizzas(){
 
 
 function showIngredients(){
-    console.log('\nСписок ингредиентов');
-    const ingredients = ingredientRepo.getAll();
-    if (ingredients.length===0){
-        console.log('Список пуст.');
-    }else{
-        ingredients.forEach(ing =>{
-            console.log(`ID:${ing.id} | Название:${ing.name} | Цена: ${ing.price}р`);});}
+    console.log('\n=== Список ингредиентов ===');
+    const allIngredients = ingredientRepo.getAll();
+    
+    const filter = readlineSync.question('Поиск по названию (Enter - показать все): ').toLowerCase();
+    const displayList = allIngredients.filter(ing => ing.name.toLowerCase().includes(filter));
+
+    if (displayList.length === 0){
+        console.log('Ингредиенты не найдены.');
+    } else{
+        displayList.forEach(ing =>{
+            console.log(`ID: ${ing.id.slice(0,8)} | Название: ${ing.name} | Цена: ${ing.price}р`);
+        });
+    }
     readlineSync.question('\nНажмите Enter чтобы продолжить');
 }
-
-
-
-
-
-
 
 function showBases(){
     console.clear();
     console.log('=== Основы ===');
-    const bases=baseRepo.getAll();
+    const allBases = baseRepo.getAll();
     
-    if(bases.length === 0){
-        console.log('Основ пока нет!');
+    const filter = readlineSync.question('Поиск по названию (Enter - показать все): ').toLowerCase();
+    const displayList = allBases.filter(b => b.name.toLowerCase().includes(filter));
+
+    if (displayList.length === 0){
+        console.log('Основы не найдены!');
     } else{
-        bases.forEach(base =>{console.log(`- ${base.name}:${base.price}р${base.isClassic?' [Классика]':''}`);});
+        displayList.forEach(base =>{
+            console.log(`- ${base.name}: ${base.price}р ${base.isClassic ? '[Классика]' : ''}`);
+        });
     }
     readlineSync.question('\nНажмите Enter чтобы продолжить');
 }
@@ -762,7 +805,7 @@ function initDemoData(){
 
 
 
-function addBorderMenu() {
+function addBorderMenu(){
     console.log('\nДобавить бортик');
     let name='';
     while (name.trim().length===0){
@@ -777,17 +820,33 @@ function addBorderMenu() {
         console.log("Ошибка: неверная цена!");
         return;
     }
-    borderRepo.create({ id: uuidv4(), name: name.trim(), price, ingredients: [], allowedPizzaIds: [] });
+    const borderIngs: IIngredient[] = [];
+    while (true){
+        const ings = ingredientRepo.getAll();
+        const ingIndex = readlineSync.keyInSelect(ings.map(i=>i.name), 'Из чего состоит бортик? (Отмена - закончить выбор):');
+        if (ingIndex===-1) break;
+        borderIngs.push(ings[ingIndex]);
+    }
+
+    const allowedPizzaIds: string[] = [];
+    if (readlineSync.keyInYN('Ограничить использование этого бортика только для конкретных пицц?')){
+        const allPizzas = pizzaRepo.getAll();
+        while (true){
+            const pIdx = readlineSync.keyInSelect(allPizzas.map(p=>p.name), 'Выберите пиццу (Отмена - закончить выбор):');
+            if (pIdx === -1) break;
+            if (!allowedPizzaIds.includes(allPizzas[pIdx].id)){
+                allowedPizzaIds.push(allPizzas[pIdx].id);
+            }
+        }
+    }
+
+    borderRepo.create({ id: uuidv4(), name: name.trim(), price, ingredients: borderIngs, allowedPizzaIds });
     console.log(`Бортик "${name}" успешно добавлен!`);
 }
 
 
 
-
-
-
-
-function showConcreteOrdersMenu() {
+function showConcreteOrdersMenu(){
     console.clear();
     console.log('=== Просмотр заказов ===');
     const allOrders = orderRepo.getAll();
@@ -795,18 +854,17 @@ function showConcreteOrdersMenu() {
     const dateFilter = readlineSync.question('Введите дату для поиска (ГГГГ-ММ-ДД) или Enter для всех: ');
     
     let displayOrders = allOrders;
-    if (dateFilter.trim() !== '') {
-        displayOrders = allOrders.filter(order => {
-            // Сравниваем только строковую дату (без времени)
+    if (dateFilter.trim() !== ''){
+        displayOrders = allOrders.filter(order =>{
             const orderDate = order.createdAt.toISOString().split('T')[0];
             return orderDate === dateFilter;
         });
     }
 
-    if (displayOrders.length === 0) {
+    if (displayOrders.length === 0){
         console.log('Заказов не найдено.');
-    } else {
-        displayOrders.forEach(order => {
+    } else{
+        displayOrders.forEach(order =>{
             console.log(`\nЗаказ от ${order.createdAt.toLocaleString()}`);
             console.log(`Позиций: ${order.items.length}, Итого: ${order.totalPrice}р`);
             console.log(`Комментарий: ${order.comment || 'нет'}`);
