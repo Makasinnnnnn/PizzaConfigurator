@@ -1,5 +1,3 @@
-import * as readline from 'readline';
-
 export interface IEntity {
     id: string;
     name: string;
