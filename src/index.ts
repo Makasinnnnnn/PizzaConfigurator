@@ -81,22 +81,23 @@ function mainMenu(){
     }
 }
 
-
-function addIngredientMenu(){
-    console.clear();
-    console.log('Добавить ингредиент');
-    const name=readlineSync.question('Название ингредиента:');
-    const priceStr=readlineSync.question('Цена:');
-    const price=parseInt(priceStr);
-
-    if(isNaN(price)||price < 0){
-        console.log('Ошибка:неверная цена');
-    } else{
-        const id=uuidv4();
-        ingredientRepo.create({ id, name, price });
-        console.log(`Ингредиент "${name}" (${price}р) добавлен`);
+function addIngredientMenu() {
+    console.log('\nДобавить ингредиент');
+    let name='';
+    while (name.trim().length===0){
+        name = readlineSync.question('Введите название ингредиента: ');
+        if (name.trim().length===0){
+            console.log("Ошибка: Название не может быть пустым. Попробуйте еще раз.");
+        }
     }
-    readlineSync.question('Нажмите Enter чтобы продолжить');
+    const priceInput = readlineSync.question('Введите стоимость: ');
+    const price = parseInt(priceInput, 10);
+    if (isNaN(price)||price<0){
+        console.log("Ошибка:неверная цена!");
+        return;
+    }
+    ingredientRepo.create({ id: uuidv4(), name: name.trim(), price });
+    console.log(`Ингредиент "${name}" успешно добавлен!`);
 }
 
 function addBaseMenu(){
@@ -195,7 +196,7 @@ function createPizzaMenu(){
         totalPrice:total
     });
 
-    console.log(`\n🍕 Пицца "${name}" создана! Итого:${total}р`);
+    console.log(`\nПицца "${name}" создана! Итого:${total}р`);
     readlineSync.question('Нажмите Enter чтобы продолжить');
 }
 
@@ -218,18 +219,14 @@ function showPizzas(){
 }
 
 function showIngredients(){
-    console.clear();
-    console.log('=== Ингредиенты ===');
-    const ingredients=ingredientRepo.getAll();
-    
-    if(ingredients.length === 0){
-        console.log('Ингредиентов пока нет!');
-    } else{
+    console.log('\nСписок ингредиентов');
+    const ingredients = ingredientRepo.getAll();
+    if (ingredients.length===0){
+        console.log('Список пуст.');
+    }else{
         ingredients.forEach(ing =>{
-            console.log(`- ${ing.name}:${ing.price}р`);
-        });
-    }
-    readlineSync.question('\nНажмите Enter чтобы продолжить');
+            console.log(`ID:${ing.id} | Название:${ing.name} | Цена: ${ing.price}р`);});}
+    readlineSync.question('\nНажмите Enter, чтобы вернуться...');
 }
 
 function showBases(){
@@ -524,7 +521,7 @@ function initDemoData(){
             ingredientRepo.getById(tomatoId)!,
             ingredientRepo.getById(sauceId)!
         ],
-        totalPrice:270
+        totalPrice:320
     });
 
     pizzaRepo.create({
@@ -536,7 +533,7 @@ function initDemoData(){
             ingredientRepo.getById(pepperoniId)!,
             ingredientRepo.getById(sauceId)!
         ],
-        totalPrice:340
+        totalPrice:390
     });
 
     pizzaRepo.create({
@@ -548,7 +545,7 @@ function initDemoData(){
             ingredientRepo.getById(mushroomsId)!,
             ingredientRepo.getById(sauceId)!
         ],
-        totalPrice:320
+        totalPrice:370
     });
 
     console.log('Демо-данные загружены!\n');
