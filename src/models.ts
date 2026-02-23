@@ -30,7 +30,6 @@ export type PizzaSize = 'small' | 'medium' | 'large';
 
 
 export interface IOrder extends IEntity{
-    id: string;
     items: IPizza[];
     totalPrice: number;
     comment: string;
