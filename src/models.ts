@@ -16,8 +16,8 @@ export interface IPizza extends IEntity{
     base: IPizzaBase;
     ingredients: IIngredient[];
     totalPrice: number;
-    border?: IPizzaBortik;
-    size?: PizzaSize;
+    bortik?: IPizzaBortik;
+    size: PizzaSize;
 }
 
 export interface IPizzaBortik extends IEntity{
